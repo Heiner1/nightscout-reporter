@@ -1,4 +1,85 @@
 ## [Unreleased]
+## [1.2.8]
+## Added
+- setting for display of latest glucose value in titlebar
+
+## Changed
+- daily and weekly graphics have the ability to place 1, 2, 4, 8 or 16 graphics on one page
+- profile page has more space for timenames
+
+## Fixed
+- creation of multiple pdf pages has been fixed
+
+## [1.2.7]
+## Added
+- errorhandling for empty periods
+
+## [1.2.6]
+## Added
+- definition of weekdays to include in reports
+
+## Changed
+- scales of graphics use now whole numbers for mmol/L
+- units of scales are shown at the bottom of the graphics 
+
+## [1.2.5]
+## Added
+- splitting of pdf _if exceeding given limit
+- smb in daily graphics can now be hidden
+- different bolus types can now be separated in daily graphic
+- order of forms can be changed
+- analysis page shows GVI and PGS
+- standard deviation can be shown on the analysis page instead of number of values
+- standard deviation of the values in the period is shown on the analysis page
+
+## Changed
+- control for period changed to fit better on small displays
+- decimal places of insulin dosage is caluclated using values in profile
+- data of some uploaders are better interpreted
+- data marked as sync by xdrip are ignored
+- colors of dialogs and scrollbars have been adjusted
+
+## Fixed
+- calculation of basalrate was corrected
+- profilepage adjusted so that 24 hours fit on one page
+- links for nightscout and reports of nightscout in the menu now even work if a usertoken was provided
+- main page can be scrolled in firefox
+- daily graphics now show the correct values for mmol/L
+- standard deviation is shown correctly for mmol/L
+- wrong alignment of button on mainpage has been fixed 
+
+## [1.2.4]
+### Added
+- the dia value on the profile page is shown with two decimals
+- There is now also the possibility to use Nightscout Reporter in European English. The difference to American English currently exists only in the date format (gb: dd/MM/yyyy, us: MM/dd/yyyy).
+- The legend below the daily graph shows the sum of carbohydrates for the day.
+- Reservoir changes are now also shown in the daily graph.
+- The daily chart now shows the estimated HbA1C and the percentage of bolus insulin and basal insulin for the day. These values are displayed within the legend, which is why it must be enabled for the values to appear.
+### Changed
+- DIA on the profile page is now displayed with two decimal places.
+- There is now an option for the daily graphics to toggle the accumulation of close values.
+- The carbohydrate information on the daily graph is now output without the suffix KH.
+- The bars for the bolus insulin in the daily graph are now scaled according to the maximum bolus insulin at that day.
+- In the analysis the percentages for the target areas can be shown with decimal places. This reduces the difference to 100% if you sum it up. The remainder is because of rounding differences.
+
+## [1.2.3]
+### Changed
+- consecutive entries with the same values in the profile are collected and written in one line on the profile pdf
+- insulin and carb values within a range of an hour are combined in one sum in the daily graphic
+
+### Fixed
+- profiles with many time entries were overlaying the next page. Now a new page is created when there are too many entries to fit on one page.
+- targetarea in profile is displayed using the correct display_unit
+- title of ISF column in profile shows the correct display_unit 
+
+## [1.2.0]
+### Added
+- signin component for google drive to save the settings there
+- daily statistics and graphics show the day of week
+- count of reservoirs, catheters and sensors can be shown with decimal places
+- new pdf weekgraphics
+
+## [1.1.2]
 ### Added
 - added own control for definition of period
 - added bloody values to daily graphics
@@ -12,7 +93,9 @@
 - fixed position of notes in daily graphics
 - fixed lines of notes in daily graphics to not cross the value table
 - fixed calculation of own limits on analysis pdf in mmol/L
-- fixed calendar control to set start and end correct if period is defined 
+- fixed calendar control to set start and end correct if period is defined
+- fixed debug-links for urls that need user tokens
+- start button will only be enabled when form and period are selected
 
 ## [1.1.1]
 ### Added

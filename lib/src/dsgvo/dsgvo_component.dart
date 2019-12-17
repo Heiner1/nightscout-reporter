@@ -9,7 +9,7 @@ import 'package:nightscout_reporter/src/globals.dart' as globals;
   selector: 'dsgvo',
   styleUrls: ['dsgvo_component.css'],
   templateUrl: 'dsgvo_component.html',
-  directives: [ ModalComponent, MaterialDialogComponent, MaterialButtonComponent, MaterialIconComponent,],
+  directives: [ ModalComponent, MaterialDialogComponent, MaterialButtonComponent, MaterialIconComponent, NgIf],
   providers: [],)
 class DSGVOComponent
 {
@@ -20,9 +20,7 @@ class DSGVOComponent
   => _trigger.stream;
   final _trigger = StreamController<UIEvent>.broadcast(sync: true);
 
-  @Input()
-  bool isVisible = false;
-
+  bool isVisible = true;
   DSGVOComponent();
 
   void fire(String type)

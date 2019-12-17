@@ -12,9 +12,9 @@ class _Day
   int _forMonth;
 
   get name
-  => _period.dowName(date);
+  => DatepickerPeriod.dowName(date);
   get shortName
-  => _period.dowShortName(date);
+  => DatepickerPeriod.dowShortName(date);
 
   int get day
   => date.day;
@@ -23,12 +23,10 @@ class _Day
   => _period.start != null && _period.end != null && date.isOnOrAfter(_period.start) && date.isOnOrBefore(_period.end);
   bool get isEnabled
   {
-    if(date.month != _forMonth)
-      return false;
-    if(_period.maxDate != null && date.isAfter(_period.maxDate))
-      return false;
-    if(_period.minDate != null && date.isBefore(_period.minDate))
-      return false;
+    if (date.month != _forMonth)return false;
+    if (_period.maxDate != null && date.isAfter(_period.maxDate))return false;
+    if (_period.minDate != null && date.isBefore(_period.minDate))return false;
+    if (!_period.isDowActive(date.weekday - 1))return false;
     return true;
   }
 
@@ -84,6 +82,17 @@ class _Month
 class MonthComponent
 {
   _Month month = null;
+  @Input()
+  bool isLocal = false;
+
+  monthName(date)
+  => DatepickerPeriod.monthName(date);
+
+  dowmark(idx)
+  => period.isDowActive(idx) ? "done" : "close";
+
+  dayclass(_Day day)
+  => period.entryKey != null ? 'key' : '';
 
   get firstDayOfWeek
   => period.firstDayOfWeek;

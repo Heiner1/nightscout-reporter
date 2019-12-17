@@ -5,122 +5,65 @@ import 'package:intl/intl.dart';
 import 'package:nightscout_reporter/src/jsonData.dart';
 
 import 'base-print.dart';
+import 'base-profile.dart';
 
-class CalcData
-{
-  double firstGluc = 0.0;
-  int firstTime = 0;
-  int lastTime = 0;
-  int bolusTime = 0;
-  int glucMax = 0;
-  int brBolusTime = null;
-  DateTime endDate = null;
-  List<ProfileEntryData> nextBRTimes = List<ProfileEntryData>();
-}
-
-class PrintBasalrate extends BasePrint
-{
-  bool isPrecise;
-  int get _precision => isPrecise ? 2 : 1;
-
-  @override
-  List<ParamInfo> params = [
-    ParamInfo(0, msgParam1, boolValue: false),
-  ];
-
-  @override
-  prepareData_(ReportData data)
-  {
-    isPrecise = params[0].boolValue;
-    return data;
-  }
-
+class PrintBasalrate extends BaseProfile {
   @override
   String id = "basal";
 
   @override
-  String get name
-  => msgBasalrate;
+  String get title => msgBasalrate;
+
+  List<ParamInfo> params = [
+    ParamInfo(0, msgParam1, boolValue: false),
+  ];
+
+  static String get msgParam1 => Intl.message("Nur letzte Basalrate ausgeben");
 
   @override
-  String get title
-  => msgBasalrate;
+  bool get isPortrait => false;
 
   @override
-  bool get isPortrait
-  => false;
+  List<String> get imgList => [
+        "nightscout",
+      ];
 
-  @override
-  List<String> get imgList
-  => ["nightscout",];
-
-  num lineWidth;
-
-  static String get msgParam1
-  => Intl.message("Zwei Nachkommastellen");
-
-  PrintBasalrate()
-  {
-    init();
-  }
-
-  @override
-  hasData(ReportData src)
-  {
-    return src.profiles.length > 0;
-  }
-
-  @override
-  void fillPages(ReportData src, List<List<dynamic>> pages)
-  async {
-    lineWidth = cm(0.03);
-    var ret = [];
-    CalcData calc = CalcData();
-    DateTime startDate = DateTime(src.begDate.year, src.begDate.month, src.begDate.day);
-    DateTime endDate = DateTime(src.endDate.year, src.endDate.month, src.endDate.day);
-    List<ProfileData> profiles = src.profiles;
-    for (int i = 0; i < src.profiles.length; i++)
-    {
-      if (i < src.profiles.length - 1)
-      {
-        calc.nextBRTimes = src.profiles[i + 1].current.listBasal;
-        calc.endDate = src.profiles[i + 1].startDate.add(Duration(days: -1));
-        if (startDate
-          .difference(src.profiles[i + 1].startDate)
-          .inDays >= 0)continue;
-      }
-      else
-      {
-        calc.nextBRTimes = src.profiles[i].current.listBasal;
-        calc.endDate = null;
-      }
-
-      if (endDate
-        .difference(src.profiles[i].startDate)
-        .inDays < 0)continue;
-
-      pages.add(getPage(profiles[i], calc));
-    }
-  }
-
-  static double gridHeight = 9.45;
+  static double gridHeight = 11.5;
   static double gridWidth = 24.0;
   static double graphWidth = gridWidth / 25.0 * 24.0;
 
-  double glucX(DateTime time)
-  {
+  num lineWidth;
+
+  PrintBasalrate() : super() {}
+
+  @override
+  extractParams() {
+    onlyLast = params[0].boolValue;
+  }
+
+  @override
+  dynamic get estimatePageCount => {"count": 1, "isEstimated": !onlyLast};
+
+  double glucX(DateTime time) {
     return graphWidth / 1440 * (time.hour * 60 + time.minute);
   }
 
-  getPage(ProfileData profile, CalcData calc)
-  {
+  @override
+  Page getPage(int page, ProfileGlucData profile, CalcData calc) {
+    if (page > 0) return null;
+    subtitle = profile.store.name;
+    // titleInfo = titleInfoTimeRange(profStartTime, profEndTime);
+    titleInfo = msgValidFrom(fmtDate(profile.store.startDate));
+
+//    getPage(ProfileGlucData profile, CalcData calc)
+//  {
     double xo = xorg;
     double yo = yorg;
-    titleInfo = titleInfoForDates(profile.startDate, calc.endDate);
+//    titleInfo = titleInfoForDates(profile.startDate, calc.endDate);
+
     double brMax = 0.0;
-    List<ProfileEntryData> brtimes = profile.store[profile.defaultProfile].listBasal;
-    for (var i = 0; i < brtimes.length; i++)
-      brMax = max(brtimes[i].value, brMax);
+    List<ProfileEntryData> brtimes = profile.store.listBasal;
+    for (var i = 0; i < brtimes.length; i++) brMax = max(brtimes[i].value, brMax);
 
     double step = brMax > 6 ? 0.5 : brMax > 3 ? 0.2 : 0.1;
 
@@ -130,15 +73,20 @@ class PrintBasalrate extends BasePrint
 
     double lw = cm(0.03);
     String lc = "#a0a0a0";
-    var vertLines = {"relativePosition": {"x": cm(xo), "y": cm(yo)}, "canvas": []};
-    var horzLines = {"relativePosition": {"x": cm(xo - 0.2), "y": cm(yo)}, "canvas": []};
+    var vertLines = {
+      "relativePosition": {"x": cm(xo), "y": cm(yo)},
+      "canvas": []
+    };
+    var horzLines = {
+      "relativePosition": {"x": cm(xo - 0.2), "y": cm(yo)},
+      "canvas": []
+    };
     var horzLegend = {"stack": []};
 
     List vertCvs = vertLines["canvas"] as List;
     List horzCvs = vertLines["canvas"] as List;
     List horzStack = horzLegend["stack"];
-    for (var i = 0; i < 25; i++)
-    {
+    for (var i = 0; i < 25; i++) {
       vertCvs.add({
         "type": "line",
         "x1": cm(i * colWidth),
@@ -148,8 +96,7 @@ class PrintBasalrate extends BasePrint
         "lineWidth": lw,
         "lineColor": i > 0 && i < 24 ? lc : lcFrame
       });
-      if (i < 24)
-      {
+      if (i < 24) {
         vertCvs.add({
           "type": "line",
           "x1": cm((i + 0.5) * colWidth),
@@ -161,7 +108,7 @@ class PrintBasalrate extends BasePrint
         });
         horzCvs.add({
           "relativePosition": {"x": cm(xo + i * colWidth), "y": cm(yo + gridLines * lineHeight + 0.3)},
-          "text": fmtNumber(i, 0),
+          "text": g.fmtNumber(i, 0),
           "fontSize": fs(8)
         });
         horzStack.add({
@@ -173,8 +120,7 @@ class PrintBasalrate extends BasePrint
     }
     var vertLegend = {"stack": []};
     List vertStack = vertLegend["stack"];
-    for (var i = 0; i <= gridLines; i++)
-    {
+    for (var i = 0; i <= gridLines; i++) {
       horzCvs.add({
         "type": "line",
         "x1": cm(-0.2),
@@ -184,8 +130,8 @@ class PrintBasalrate extends BasePrint
         "lineWidth": lw,
         "lineColor": i > 0 ? lc : lcFrame
       });
-//      vertCvs.add({"relativePosition": {"x": cm(xo - 0.7), "y": cm(yo + (gridLines - i) * lineHeight - 0.15)}, "text": fmtNumber(i / 10, 1), "fontSize": fs(8)});
-      String text = "${fmtNumber(i * step, 1)} ${msgInsulinUnit}";
+//      vertCvs.add({"relativePosition": {"x": cm(xo - 0.7), "y": cm(yo + (gridLines - i) * lineHeight - 0.15)}, "text": g.fmtNumber(i / 10, 1), "fontSize": fs(8)});
+      String text = "${g.fmtNumber(i * step, 1)} ${msgInsulinUnit}";
       vertStack.add({
         "relativePosition": {"x": cm(xo - 1.0), "y": cm(yo + (gridLines - i) * lineHeight - 0.15)},
         "text": text,
@@ -198,33 +144,56 @@ class PrintBasalrate extends BasePrint
       });
     }
 
-    var testArea = {"relativePosition": {"x": cm(xo), "y": cm(yo)}, "canvas": []};
-    var glucArea = {"relativePosition": {"x": cm(xo), "y": cm(yo)}, "canvas": []};
+    var testArea = {
+      "relativePosition": {"x": cm(xo), "y": cm(yo)},
+      "canvas": []
+    };
+    var glucArea = {
+      "relativePosition": {"x": cm(xo), "y": cm(yo)},
+      "canvas": []
+    };
     var glucValues = {"stack": []};
-    var brArea = {"relativePosition": {"x": cm(xo), "y": cm(yo)}, "canvas": []};
+    var brArea = {
+      "relativePosition": {"x": cm(xo), "y": cm(yo)},
+      "canvas": []
+    };
     List brAreaCvs = brArea["canvas"] as List;
-    Date date = Date(profile.startDate.year, profile.startDate.month, profile.startDate.day);
-    for (var i = 0; i < brtimes.length; i++)
-    {
+    Date date = Date(profStartTime.year, profStartTime.month, profStartTime.day);
+    for (var i = 0; i < brtimes.length; i++) {
       double x = glucX(brtimes[i].time(date));
       double w = 0;
-      if (i < brtimes.length - 1)w = glucX(brtimes[i + 1].time(date)) - x;
+      if (i < brtimes.length - 1)
+        w = glucX(brtimes[i + 1].time(date)) - x;
       else
         w = graphWidth - x;
-      brAreaCvs.add({
-        "type": "rect",
-        "x": cm(x),
-        "y": cm(lineHeight * gridLines),
-        "w": cm(w),
-        "h": cm(-brtimes[i].value / step * lineHeight),
-        "color": colBasalProfile
-      });
+
+      bool showBar = true;
+/*
+      if (isSingleDay)
+      {
+        DateTime startTime = brtimes[i].time(date);
+        DateTime endTime = brtimes[i].time(date).add(Duration(minutes: 59));
+        showBar = isSingleDayRange(startTime, endTime);
+      }
+*/
+      if (showBar)
+        brAreaCvs.add({
+          "type": "rect",
+          "x": cm(x),
+          "y": cm(lineHeight * gridLines),
+          "w": cm(w),
+          "h": cm(-brtimes[i].value / step * lineHeight),
+          "color": colBasalProfile,
+        });
     }
     xo -= 1.0;
     yo += lineHeight * gridLines + 1.5;
 
     lineHeight = 0.7;
-    var brTable = {"relativePosition": {"x": cm(xo), "y": cm(yo)}, "canvas": []};
+    var brTable = {
+      "relativePosition": {"x": cm(xo), "y": cm(yo)},
+      "canvas": []
+    };
     List brTableCvs = brTable["canvas"] as List;
     brTableCvs.add({
       "type": "rect",
@@ -232,7 +201,7 @@ class PrintBasalrate extends BasePrint
       "y": cm(0),
       "w": cm(24 * colWidth + 2.0),
       "h": cm(lineHeight),
-      "color": colBasalProfile
+      "color": colBasalProfile,
     });
     brTableCvs.add({
       "type": "rect",
@@ -247,7 +216,7 @@ class PrintBasalrate extends BasePrint
       "x1": cm(0),
       "y1": cm(0),
       "x2": cm(0),
-      "y2": cm(3 * lineHeight),
+      "y2": cm(2 * lineHeight),
       "lineWidth": lw,
       "lineColor": lc
     });
@@ -256,11 +225,11 @@ class PrintBasalrate extends BasePrint
       "x1": cm(24 * colWidth + 2.0),
       "y1": cm(0),
       "x2": cm(24 * colWidth + 2.0),
-      "y2": cm(3 * lineHeight),
+      "y2": cm(2 * lineHeight),
       "lineWidth": lw,
       "lineColor": lc
     });
-    for (var i = 0; i < 4; i++)
+    for (var i = 0; i < 3; i++)
       brTableCvs.add({
         "type": "line",
         "x1": cm(0),
@@ -292,44 +261,45 @@ class PrintBasalrate extends BasePrint
         {
           "relativePosition": {"x": cm(xo), "y": cm(yo + 0.05)},
           "columns": [
-            {"width": cm(1), "text": msgTimeShort, "fontSize": fs(8), "color": colBasalFont, "alignment": "center"}]
-        },
-        {
-          "relativePosition": {"x": cm(xo), "y": cm(yo + lineHeight + 0.2)},
-          "columns": [ {"width": cm(1), "text": msgInsulinUnit, "fontSize": fs(8), "alignment": "center"},
+            {"width": cm(1), "text": msgTimeShort, "fontSize": fs(8), "color": colBasalFont, "alignment": "center"}
           ]
         },
         {
-          "relativePosition": {"x": cm(xo), "y": cm(yo + 2 * lineHeight + 0.05)},
-          "columns": [ {"width": cm(1), "text": msgAdjustment, "fontSize": fs(8), "alignment": "center"}],
+          "relativePosition": {"x": cm(xo), "y": cm(yo + lineHeight + 0.2)},
+          "columns": [
+            {"width": cm(1), "text": msgInsulinUnit, "fontSize": fs(8), "alignment": "center"},
+          ]
         },
+//        {
+//          "relativePosition": {"x": cm(xo), "y": cm(yo + 2 * lineHeight + 0.05)},
+//          "columns": [ {"width": cm(1), "text": msgAdjustment, "fontSize": fs(8), "alignment": "center"}],
+//        },
       ],
     };
 
     var legendTime = (brLegend["stack"] as List)[0]["columns"] as List;
     var legendIE = (brLegend["stack"] as List)[1]["columns"] as List;
-    var legendAdjust = (brLegend["stack"] as List)[2]["columns"] as List;
+//    var legendAdjust = (brLegend["stack"] as List)[2]["columns"] as List;
 
     double ieSum = 0.0;
     double ieSumNext = 0.0;
     var m = [cm(0.1), cm(0.17), cm(0), cm(0)];
     bool hasAdjustment = false;
-    for (var i = 0; i < 25; i++)
-    {
+    for (var i = 0; i < 25; i++) {
       m[0] = cm(0.5);
       brTableCvs.add({
         "type": "line",
         "x1": cm(1 + i * colWidth),
         "y1": cm(0),
         "x2": cm(1 + i * colWidth),
-        "y2": cm(3 * lineHeight),
+        "y2": cm(2 * lineHeight),
         "lineWidth": lw,
         "lineColor": lc
       });
       var text = {
         "width": cm(colWidth),
         "margin": [i < 24 ? cm(0.15) : cm(0), cm(0.15), cm(0), cm(0)],
-        "text": (i < 24 ? fmtNumber(i) : msgTotal),
+        "text": (i < 24 ? g.fmtNumber(i) : msgTotal),
         "fontSize": fs(8),
         "color": colBasalFont,
         "alignment": i < 24 ? "left" : "center"
@@ -341,37 +311,30 @@ class PrintBasalrate extends BasePrint
     var m2 = [cm(0), cm(0.15), cm(0), cm(0)];
 
     int lastHour = 0;
-    for (var i = 0; i < brtimes.length; i++)
-    {
+    for (var i = 0; i < brtimes.length; i++) {
       int hour = brtimes[i].time(date).hour;
       int w = 0;
       m1[0] = (hour - lastHour).toDouble();
       m2[0] = m1[0];
       lastHour = hour;
-      if (i < brtimes.length - 1)w = brtimes[i + 1].time(date).hour - brtimes[i].time(date).hour;
+      if (i < brtimes.length - 1)
+        w = brtimes[i + 1].time(date).hour - brtimes[i].time(date).hour;
       else
         w = 24 - brtimes[i].time(date).hour;
       legendIE.add({
         "width": cm(w * colWidth),
         "margin": m1,
-        "text": fmtNumber(brtimes[i].value, _precision),
+        "text": g.fmtBasal(brtimes[i].value),
         "fontSize": fs(8),
         "alignment": "left"
       });
 //*
       String text = "";
-      if (brtimes[i].value != calc.nextBRTimes[i].value)
-      {
-        text = fmtNumber(calc.nextBRTimes[i].value, _precision);
+      if (i < calc.nextBRTimes.length && brtimes[i].value != calc.nextBRTimes[i].value) {
+        text = g.fmtBasal(calc.nextBRTimes[i].value);
         hasAdjustment = true;
       }
-      legendAdjust.add({
-        "width": cm(w * colWidth),
-        "margin": m2,
-        "text": text,
-        "fontSize": fs(8),
-        "alignment": "left"
-      });
+//      legendAdjust.add({"width": cm(w * colWidth), "margin": m2, "text": text, "fontSize": fs(8), "alignment": "left"});
 // */
       ieSum += brtimes[i].value * w;
       ieSumNext += calc.nextBRTimes.length > i ? calc.nextBRTimes[i].value : 0.0;
@@ -379,15 +342,10 @@ class PrintBasalrate extends BasePrint
 //    legendAdjust.add({"width": cml(colWidth), "text": "", "fontSize": fs(8)});
 
     legendIE.add(
-      {"width": cm(colWidth), "margin": m0, "text": fmtNumber(ieSum, _precision), "fontSize": fs(8), "alignment": "center"});
+        {"width": cm(colWidth), "margin": m0, "text": g.fmtBasal(ieSum), "fontSize": fs(8), "alignment": "center"});
 
-    if (hasAdjustment) legendAdjust.add({
-      "width": cm(colWidth),
-      "margin": m2,
-      "text": fmtNumber(ieSumNext, _precision),
-      "fontSize": fs(8),
-      "alignment": "center"
-    });
+//    if (hasAdjustment) legendAdjust.add(
+//      {"width": cm(colWidth), "margin": m2, "text": g.fmtBasal(ieSumNext), "fontSize": fs(8), "alignment": "center"});
     var content = [
       headerFooter(),
       /*
@@ -409,35 +367,44 @@ class PrintBasalrate extends BasePrint
       horzLines,
       glucArea,
       glucValues,
-      {"relativePosition": {"x": cm(13.5), "y": cm(14.1)}, "text": msgTime, "fontSize": fs(12)},
+      {
+        "relativePosition": {"x": cm(13.5), "y": cm(gridHeight + 4.65)},
+        "text": msgTime,
+        "fontSize": fs(12)
+      },
       brTable,
       brLegend
     ];
 
-    return content;
+    return Page(isPortrait, content);
   }
 
-  getIllegalMark(xo, yo, x, y)
-  {
+  getIllegalMark(xo, yo, x, y) {
     return [
-      {"relativePosition": {"x": cm(xo), "y": cm(yo)}, "type": "ellipse", "x": cm(x), "y": cm(y), "r1": 3, "r2": 3}
+      {
+        "relativePosition": {"x": cm(xo), "y": cm(yo)},
+        "type": "ellipse",
+        "x": cm(x),
+        "y": cm(y),
+        "r1": 3,
+        "r2": 3
+      }
     ];
   }
 
-  getBRMark(xo, yo, x, y, gluc, calc)
-  {
-    var ret = [ {
-      "relativePosition": {"x": cm(xo), "y": cm(yo)},
-      "type": "ellipse",
-      "x": cm(x),
-      "y": cm(y),
-      "r1": 3,
-      "r2": 3,
-      "color": "#f15741"
-    }
+  getBRMark(xo, yo, x, y, gluc, calc) {
+    var ret = [
+      {
+        "relativePosition": {"x": cm(xo), "y": cm(yo)},
+        "type": "ellipse",
+        "x": cm(x),
+        "y": cm(y),
+        "r1": 3,
+        "r2": 3,
+        "color": "#f15741"
+      }
     ];
-    if ((gluc - calc.firstGluc).abs() > 30)
-    {
+    if ((gluc - calc.firstGluc).abs() > 30) {
       ret[0]["color"] = "#f00";
       ret.add({
         "type": "line",

@@ -4,50 +4,77 @@
 
 :host {
 }
+
 material-dialog {
-  @include material-dialog-header-color($primary_back);
+  @include material-dialog-header-color(var(--primaryBack));
   @include material-dialog-header-shadow();
   @include material-dialog-body-padding(0);
 }
 
-
 div[header] {
   display: flex;
   flex-direction: row;
-  color: $primary_fore;
+  color: var(--primaryFore);
   justify-content: space-between;
+  align-items: center;
+
+  > div {
+    .langPanel {
+      display: flex;
+      flex-direction: row;
+      align-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
 }
+
+@media(max-width: 33em) {
+  div[header] {
+    flex-direction: column !important;
+  }
+}
+
 .root {
   padding: 1em;
   font-size: 1.2em;
-  background-color: $secondary_back;
+  background-color: var(--secondaryBack);
 }
-h1
-{
+
+h1 {
   margin-top: 0em;
   margin-bottom: 0.5em;
 }
-.root>div
-{
+
+.root > div {
   text-align: justify;
   padding-top: 1.0em;
 }
-a,a:visited,a:active
-{
+
+a, a:visited, a:active {
   text-decoration: none;
   cursor: pointer;
-  color: $primary-back;
+  color: var(--primaryBack);
 }
-.controls
-{
+
+.controls {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   flex-wrap: wrap;
 }
 
-.right
-{
+.left {
+  display: flex;
+  flex-direction: column;
+}
+
+.right {
   display: flex;
   flex-direction: row;
+  align-items: flex-end;
 }
+

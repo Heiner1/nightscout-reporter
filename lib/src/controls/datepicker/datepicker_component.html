@@ -1,11 +1,22 @@
-<div class="floating">{{periodFloatingLabel}}</div>
-<material-button (trigger)="loadedPeriod=period.toString();isDialogOpen=true;">{{periodLabel}}</material-button>
+<div class="floating" *ngIf="showLabel">{{periodFloatingLabel}}</div>
+<div [class]="infoClass('')">
+  <pre class="infotext">Auswahl des Zeitraums, für den
+die PDFs erstellt werden sollen</pre>
+  <material-button [class]="period.isEmpty?'dpBtn empty':'dpBtn'"
+                   (trigger)="loadedPeriod=period.toString();isDialogOpen=true;">
+    <div main>{{periodLabelMain}}</div>
+    <div sub *ngIf="period.dowActiveText!=''">{{periodLabelSub}}</div>
+  </material-button>
+</div>
 <modal [visible]="isDialogOpen">
-  <material-dialog headered class="headered-dialog">
+  <material-dialog headered [class]="period.isEmpty?'headered-dialog empty':'headered-dialog'">
     <div header>
       <div>
-        <h1 @i18n="title for datepicker dialog">Zeitraum</h1>
-        <p></p>
+        <h1 *ngIf="!period.isEmpty" @i18n="title for datepicker dialog">Zeitraum</h1>
+        <h1 *ngIf="period.isEmpty" @i18n="title for datepicker dialog when period empty">Der Zeitraum enthält keine
+          auswertbaren Tage</h1>
+        <p *ngIf="period.isEmpty" @i18n="subtitle for datepicker dialog when period empty">Bitte überprüfe die
+          Aktivierung der Wochentage unter dem Monat</p>
       </div>
       <material-button icon (trigger)="revertData();isDialogOpen=false;">
         <material-icon icon="close"></material-icon>
@@ -16,13 +27,13 @@
         <material-input [(ngModel)]="startDate" floatingLabel @i18n:label="datepicker label from" label="Von"
                         [error]="isStartValid?'':msgStartIncorrect" (focus)="month=period.start"></material-input>
         <material-input [(ngModel)]="endDate" floatingLabel @i18n:label="datepicker label to"
-                        label="bis" [error]="isEndValid?'':msgEndIncorrect" (focus)="month=period.end"></material-input>
+                        label="Bis" [error]="isEndValid?'':msgEndIncorrect" (focus)="month=period.end"></material-input>
       </div>
       <div class="month" *ngIf="month!=null">
         <material-button class="prev" [disabled]="isMinMonth" (trigger)="month=month.add(months: -1)">
           <material-icon icon="chevron_left"></material-icon>
         </material-button>
-        <month [date]="month" [period]="period"></month>
+        <month [date]="month" [period]="period" [isLocal]="isLocal"></month>
         <material-button class="next" [disabled]="isMaxMonth" (trigger)="month=month.add(months: 1)">
           <material-icon icon="chevron_right"></material-icon>
         </material-button>
@@ -31,7 +42,9 @@
     <div footer>
       <div class="shortcuts">
         <material-button *ngFor="let item of period.list" [raised]="period.entryKey==item.key"
-                         (trigger)="item.fill(period);month=period.end">{{item.title}}
+                         (trigger)="item.fill(period);month=period.end">
+          <material-icon *ngIf="item.key=='save'" icon="save"></material-icon>
+          {{item.title}}
         </material-button>
       </div>
       <material-button class="iconButton ok" (trigger)="isDialogOpen=false;fire('save');">
